@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
 import PatientDashboard from "./components/patient/PatientDashboard";
+import ProviderDashboard from "./components/provider/ProviderDashboard";
 
 function App() {
   return (
@@ -7,7 +8,7 @@ function App() {
       <Routes>
         {/* Patient Dashboard - Full page layout with sidebar */}
         <Route path="/patient/dashboard" element={<PatientDashboard />} />
-        
+
         {/* All other routes with Header */}
         <Route path="*" element={<LayoutWithHeader />} />
       </Routes>
@@ -277,18 +278,7 @@ function EmergencyCardPage() {
 
 /* ---------- Provider Area ---------- */
 
-function ProviderDashboard() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">Provider Dashboard</h2>
-      <p className="text-slate-300">
-        View assigned patients, their wellness scores, and preventive
-        compliance.
-      </p>
-      {/* TODO: Bind to /api/providers/:id/patients */}
-    </section>
-  );
-}
+
 
 function ProviderPatientDetail() {
   // You can read :patientId via useParams() when you hook it up
