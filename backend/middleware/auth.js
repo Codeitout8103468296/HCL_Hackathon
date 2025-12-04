@@ -24,7 +24,9 @@ const protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Hardcoded JWT_SECRET - change in production
+    const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_change_this_in_production_12345';
+    const decoded = jwt.verify(token, JWT_SECRET);
     
     // Handle both string and ObjectId formats
     const userId = decoded.id || decoded._id;
@@ -69,6 +71,10 @@ const protect = async (req, res, next) => {
 
 const authorize = (...roles) => {
   return (req, res, next) => {
+    // Admin can access everything
+    if (req.user.role === 'admin') {
+      return next();
+    }
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,

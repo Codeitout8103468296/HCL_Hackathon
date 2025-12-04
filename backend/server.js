@@ -12,8 +12,31 @@ if (process.env.NODE_ENV !== 'test') {
 const app = express();
 
 // Middleware
+// Allow multiple origins for development (Vite uses 5173, Create React App uses 3000)
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174'
+];
+
+const FRONTEND_URL = process.env.FRONTEND_URL || allowedOrigins;
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    // In development, allow all localhost origins
+    if (process.env.NODE_ENV === 'development' || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      callback(null, true);
+    } else if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -23,6 +46,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/patients', require('./routes/patients'));
 app.use('/api/providers', require('./routes/providers'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/wellness', require('./routes/wellness'));
 app.use('/api/recommendations', require('./routes/recommendations'));
 app.use('/api/advisories', require('./routes/advisories'));
@@ -73,7 +97,7 @@ if (process.env.NODE_ENV !== 'test') {
       }
     }
     
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 5001;
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

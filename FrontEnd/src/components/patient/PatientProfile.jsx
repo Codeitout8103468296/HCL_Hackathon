@@ -17,28 +17,54 @@ export default function PatientProfile() {
   }, [user]);
 
   const loadProfile = async () => {
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
+    
     try {
-      // Mock data for now
-      setProfile({
-        name: user?.name || 'David',
-        email: user?.email || 'david@example.com',
-        dob: '1990-01-15',
-        sex: 'male',
-        bloodGroup: 'O+',
-        allergies: ['Penicillin', 'Peanuts'],
-        medications: [
-          { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily' }
-        ],
-        conditions: ['Hypertension'],
-        emergencyContact: {
-          name: 'Jane Doe',
-          phone: '555-0123',
-          relationship: 'Spouse'
+      const response = await patientService.getProfile(user._id);
+      const patientData = response.data.data; // API returns { success: true, data: patient }
+      
+      // Merge user data with patient data
+      const profileData = {
+        name: patientData.userId?.name || user?.name || '',
+        email: patientData.userId?.email || user?.email || '',
+        dob: patientData.dob ? new Date(patientData.dob).toISOString().split('T')[0] : '',
+        sex: patientData.sex || '',
+        bloodGroup: patientData.bloodGroup || '',
+        allergies: patientData.allergies || [],
+        medications: patientData.medications || [],
+        conditions: patientData.conditions || [],
+        emergencyContact: patientData.emergencyContact || {
+          name: '',
+          phone: '',
+          relationship: ''
         }
-      });
-      setFormData(profile);
+      };
+      
+      setProfile(profileData);
+      setFormData(profileData);
     } catch (error) {
       console.error('Failed to load profile:', error);
+      // Set default empty profile on error
+      const defaultProfile = {
+        name: user?.name || '',
+        email: user?.email || '',
+        dob: '',
+        sex: '',
+        bloodGroup: '',
+        allergies: [],
+        medications: [],
+        conditions: [],
+        emergencyContact: {
+          name: '',
+          phone: '',
+          relationship: ''
+        }
+      };
+      setProfile(defaultProfile);
+      setFormData(defaultProfile);
     } finally {
       setLoading(false);
     }
@@ -47,11 +73,12 @@ export default function PatientProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // await patientService.updateProfile(user._id, formData);
+      await patientService.updateProfile(user._id, formData);
       setEditing(false);
-      loadProfile();
+      await loadProfile();
     } catch (error) {
       console.error('Failed to update profile:', error);
+      alert('Failed to update profile. Please try again.');
     }
   };
 

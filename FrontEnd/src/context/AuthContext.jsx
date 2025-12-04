@@ -15,7 +15,12 @@ export function AuthProvider({ children }) {
       setUser(JSON.parse(savedUser));
       // Verify token is still valid
       api.get('/auth/me')
-        .then((res) => setUser(res.data))
+        .then((res) => {
+          // Backend returns { success: true, data: { user, profile } }
+          const userData = res.data.data?.user || res.data.user || res.data;
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        })
         .catch(() => {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -28,12 +33,36 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    const { token, user } = res.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
-    return user;
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      // Backend returns { success: true, token, user: { id, email, name, role } }
+      const { token, user } = res.data;
+      
+      if (!token || !user) {
+        throw new Error('Invalid response from server');
+      }
+      
+      // Normalize user object - backend returns 'id', but some code expects '_id'
+      const normalizedUser = {
+        ...user,
+        _id: user.id || user._id
+      };
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
+      setUser(normalizedUser);
+      return normalizedUser;
+    } catch (error) {
+      console.error('Login error in AuthContext:', error);
+      // Re-throw with more context
+      if (error.response) {
+        throw new Error(error.response.data?.message || 'Login failed');
+      }
+      if (error.request) {
+        throw new Error('Cannot connect to server. Please ensure the backend is running.');
+      }
+      throw error;
+    }
   };
 
   const register = async (userData) => {

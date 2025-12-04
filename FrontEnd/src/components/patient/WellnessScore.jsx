@@ -14,17 +14,55 @@ export default function WellnessScore() {
   const [trend, setTrend] = useState([]);
 
   useEffect(() => {
-    // Mock trend data
-    setTrend([
-      { date: '2024-01-01', score: 68 },
-      { date: '2024-01-02', score: 70 },
-      { date: '2024-01-03', score: 72 },
-      { date: '2024-01-04', score: 71 },
-      { date: '2024-01-05', score: 73 },
-      { date: '2024-01-06', score: 72 },
-      { date: '2024-01-07', score: 72 },
-    ]);
-  }, []);
+    if (user?._id) {
+      loadWellnessData();
+    }
+  }, [user]);
+
+  const loadWellnessData = async () => {
+    try {
+      // Get patient ID from profile
+      const profileResponse = await patientService.getProfile(user._id);
+      const patientId = profileResponse.data.data._id;
+      
+      const response = await patientService.getWellness(patientId, '7d');
+      const wellnessData = response.data.data || {};
+      
+      // Set current score
+      setScore(wellnessData.currentScore || 0);
+      
+      // Calculate breakdown from averages
+      const avgSteps = wellnessData.averages?.steps || 0;
+      const avgSleep = wellnessData.averages?.sleepHours || 0;
+      const avgCompliance = wellnessData.averages?.preventiveComplianceScore || 0;
+      
+      // Calculate breakdown scores (40 points for steps, 30 for sleep, 30 for compliance)
+      const activityScore = Math.min(Math.round((avgSteps / 10000) * 40), 40);
+      const sleepScore = Math.min(Math.round((avgSleep / 8) * 30), 30);
+      const complianceScore = Math.min(Math.round((avgCompliance / 100) * 30), 30);
+      
+      setBreakdown({
+        activity: activityScore,
+        sleep: sleepScore,
+        compliance: complianceScore
+      });
+      
+      // Transform entries to trend data
+      const trendData = (wellnessData.entries || []).map(entry => ({
+        date: new Date(entry.date).toISOString().split('T')[0],
+        score: entry.score || 0
+      }));
+      
+      setTrend(trendData.length > 0 ? trendData : [
+        { date: new Date().toISOString().split('T')[0], score: wellnessData.currentScore || 0 }
+      ]);
+    } catch (error) {
+      console.error('Failed to load wellness data:', error);
+      setScore(0);
+      setBreakdown({ activity: 0, sleep: 0, compliance: 0 });
+      setTrend([]);
+    }
+  };
 
   const maxScore = Math.max(...trend.map(t => t.score), 100);
   const minScore = Math.min(...trend.map(t => t.score), 0);

@@ -8,7 +8,8 @@ const {
   updateProfile
 } = require('../controllers/patientController');
 const {
-  generateEmergencyCard
+  generateEmergencyCard,
+  getEmergencyCard
 } = require('../controllers/emergencyController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -20,6 +21,7 @@ router.get('/:id/goals', getGoals);
 router.post('/:id/goals', logGoal);
 router.get('/:id/profile', getProfile);
 router.put('/:id/profile', updateProfile);
+router.get('/:id/emergency-card', getEmergencyCard);
 router.post('/:id/emergency-card', generateEmergencyCard);
 
 module.exports = router;

@@ -1,24 +1,38 @@
+const mongoose = require('mongoose');
 const Provider = require('../models/Provider');
 const Patient = require('../models/Patient');
 const WellnessEntry = require('../models/WellnessEntry');
 const Advisory = require('../models/Advisory');
 
-// @desc    Get assigned patients
+// @desc    Get assigned patients (or all patients for admin)
 // @route   GET /api/providers/:id/patients
 // @access  Private
 exports.getPatients = async (req, res, next) => {
   try {
-    const provider = await Provider.findOne({ userId: req.params.id });
+    let patients;
+    
+    // Admin can see all patients
+    if (req.user.role === 'admin') {
+      patients = await Patient.find({})
+        .populate('userId', 'name email');
+    } else {
+      // Convert string ID to ObjectId
+      const userId = mongoose.Types.ObjectId.isValid(req.params.id) 
+        ? new mongoose.Types.ObjectId(req.params.id) 
+        : req.params.id;
+      
+      const provider = await Provider.findOne({ userId });
 
-    if (!provider) {
-      return res.status(404).json({
-        success: false,
-        message: 'Provider not found'
-      });
+      if (!provider) {
+        return res.status(404).json({
+          success: false,
+          message: 'Provider not found'
+        });
+      }
+
+      patients = await Patient.find({ _id: { $in: provider.patients } })
+        .populate('userId', 'name email');
     }
-
-    const patients = await Patient.find({ _id: { $in: provider.patients } })
-      .populate('userId', 'name email');
 
     // Get compliance status for each patient
     const patientsWithCompliance = await Promise.all(
@@ -55,27 +69,43 @@ exports.getPatients = async (req, res, next) => {
   }
 };
 
-// @desc    Get patient compliance
+// @desc    Get patient compliance (admin can access any patient)
 // @route   GET /api/providers/:id/patients/:patientId/compliance
 // @access  Private
 exports.getPatientCompliance = async (req, res, next) => {
   try {
-    const provider = await Provider.findOne({ userId: req.params.id });
     const patient = await Patient.findById(req.params.patientId);
 
-    if (!provider || !patient) {
+    if (!patient) {
       return res.status(404).json({
         success: false,
-        message: 'Provider or patient not found'
+        message: 'Patient not found'
       });
     }
 
-    // Check if patient is assigned to provider
-    if (!provider.patients.includes(patient._id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Patient is not assigned to this provider'
-      });
+    // Admin can access any patient, providers can only access assigned patients
+    if (req.user.role !== 'admin') {
+      // Convert string ID to ObjectId
+      const userId = mongoose.Types.ObjectId.isValid(req.params.id) 
+        ? new mongoose.Types.ObjectId(req.params.id) 
+        : req.params.id;
+      
+      const provider = await Provider.findOne({ userId });
+
+      if (!provider) {
+        return res.status(404).json({
+          success: false,
+          message: 'Provider not found'
+        });
+      }
+
+      // Check if patient is assigned to provider
+      if (!provider.patients.includes(patient._id)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Patient is not assigned to this provider'
+        });
+      }
     }
 
     // Get wellness entries

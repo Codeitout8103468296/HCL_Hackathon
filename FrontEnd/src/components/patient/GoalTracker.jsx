@@ -6,33 +6,98 @@ import PatientSidebar from './PatientSidebar';
 export default function GoalTracker() {
   const { user } = useAuth();
   const [goals, setGoals] = useState({
-    steps: { current: 3620, goal: 6000 },
-    water: { current: 5, goal: 8 },
-    sleep: { current: 6.5, goal: 8 }
+    steps: { current: 0, goal: 6000 },
+    water: { current: 0, goal: 8 },
+    sleep: { current: 0, goal: 8 }
   });
-  const [streak, setStreak] = useState(7);
+  const [streak, setStreak] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ steps: '', water: '', sleep: '' });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?._id) {
+      loadGoals();
+    }
+  }, [user]);
+
+  const loadGoals = async () => {
+    try {
+      // Get today's wellness entry
+      const dashboardResponse = await patientService.getDashboard(user._id);
+      const dashboardData = dashboardResponse.data.data;
+      const todayEntry = dashboardData.todayEntry || {};
+      
+      setGoals({
+        steps: { current: todayEntry.steps || 0, goal: 6000 },
+        water: { current: todayEntry.waterIntake || 0, goal: 8 },
+        sleep: { current: todayEntry.sleepHours || 0, goal: 8 }
+      });
+      
+      // Calculate streak from recent entries
+      const recentEntries = dashboardData.recentEntries || [];
+      let currentStreak = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      for (let i = 0; i < recentEntries.length; i++) {
+        const entryDate = new Date(recentEntries[i].date);
+        entryDate.setHours(0, 0, 0, 0);
+        const daysDiff = Math.floor((today - entryDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff === i) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+      
+      setStreak(currentStreak);
+    } catch (error) {
+      console.error('Failed to load goals:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // await patientService.logGoal(user._id, formData);
-      setGoals({
-        steps: { ...goals.steps, current: parseInt(formData.steps) || goals.steps.current },
-        water: { ...goals.water, current: parseInt(formData.water) || goals.water.current },
-        sleep: { ...goals.sleep, current: parseFloat(formData.sleep) || goals.sleep.current }
+      // Get patient ID from profile
+      const profileResponse = await patientService.getProfile(user._id);
+      const patientId = profileResponse.data.data._id;
+      
+      // Submit wellness entry
+      await patientService.submitWellness({
+        patientId,
+        steps: parseInt(formData.steps) || 0,
+        waterIntake: parseInt(formData.water) || 0,
+        sleepHours: parseFloat(formData.sleep) || 0
       });
+      
+      await loadGoals();
       setShowForm(false);
       setFormData({ steps: '', water: '', sleep: '' });
     } catch (error) {
       console.error('Failed to log goal:', error);
+      alert('Failed to log goal. Please try again.');
     }
   };
 
   const stepsPercentage = Math.round((goals.steps.current / goals.steps.goal) * 100);
   const waterPercentage = Math.round((goals.water.current / goals.water.goal) * 100);
   const sleepPercentage = Math.round((goals.sleep.current / goals.sleep.goal) * 100);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-slate-950">
+        <PatientSidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-slate-400">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100">

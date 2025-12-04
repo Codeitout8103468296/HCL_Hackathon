@@ -7,7 +7,7 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
-router.use(authorize('provider'));
+router.use(authorize('provider', 'admin'));
 
 router.get('/:id/patients', getPatients);
 router.get('/:id/patients/:patientId/compliance', getPatientCompliance);

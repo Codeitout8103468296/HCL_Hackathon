@@ -10,38 +10,42 @@ export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data
-    setPatients([
-      {
-        _id: '1',
-        name: 'David Smith',
-        email: 'david@example.com',
-        wellnessScore: 72,
-        complianceStatus: 'Good',
-        lastCheckup: '2024-01-15',
-        upcomingTests: ['Annual Health Check - Due Jan 23']
-      },
-      {
-        _id: '2',
-        name: 'Sarah Johnson',
-        email: 'sarah@example.com',
-        wellnessScore: 85,
-        complianceStatus: 'Excellent',
-        lastCheckup: '2024-01-10',
-        upcomingTests: []
-      },
-      {
-        _id: '3',
-        name: 'Michael Brown',
-        email: 'michael@example.com',
-        wellnessScore: 58,
-        complianceStatus: 'Needs Attention',
-        lastCheckup: '2023-12-20',
-        upcomingTests: ['Cholesterol Check - Overdue', 'Blood Pressure Check - Due']
+    if (user?._id) {
+      loadPatients();
+    }
+  }, [user]);
+
+  const loadPatients = async () => {
+    try {
+      // Admin can use admin service to get all patients, or use provider service with their ID
+      let response;
+      if (user.role === 'admin') {
+        const adminService = (await import('../../services/adminService')).adminService;
+        response = await adminService.getAllPatients();
+      } else {
+        response = await providerService.getPatients(user._id);
       }
-    ]);
-    setLoading(false);
-  }, []);
+      const patientsData = response.data.data || [];
+      
+      // Transform data to include additional fields
+      const transformedPatients = patientsData.map(patient => ({
+        _id: patient._id,
+        name: patient.userId?.name || 'Unknown',
+        email: patient.userId?.email || '',
+        wellnessScore: patient.wellnessScore || 0,
+        complianceStatus: patient.complianceStatus || 'Good',
+        lastCheckup: patient.lastTests?.[0]?.date || new Date().toISOString(),
+        upcomingTests: [] // TODO: Get from recommendations API
+      }));
+      
+      setPatients(transformedPatients);
+    } catch (error) {
+      console.error('Failed to load patients:', error);
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getComplianceColor = (status) => {
     switch (status) {

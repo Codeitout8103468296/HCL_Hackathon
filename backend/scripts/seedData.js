@@ -44,8 +44,11 @@ const CONFIG = {
 };
 
 async function clearDatabase() {
-  console.log('🗑️  Clearing existing data...');
+  console.log('🗑️  Clearing existing data (preserving admin user)...');
   try {
+    // Get admin user before clearing
+    const adminUser = await User.findOne({ email: 'admin@example.com' });
+    
     await EmergencyCard.deleteMany({});
     await Adherence.deleteMany({});
     await SymptomReport.deleteMany({});
@@ -54,19 +57,40 @@ async function clearDatabase() {
     await WellnessEntry.deleteMany({});
     await Patient.deleteMany({});
     await Provider.deleteMany({});
-    await User.deleteMany({});
-    console.log('✅ Database cleared');
+    // Delete all users EXCEPT admin
+    if (adminUser) {
+      await User.deleteMany({ _id: { $ne: adminUser._id } });
+    } else {
+      await User.deleteMany({});
+    }
+    console.log('✅ Database cleared (admin user preserved)');
+    return adminUser;
   } catch (error) {
     console.error('❌ Error clearing database:', error.message);
     throw error;
   }
 }
 
-async function seedProviders() {
-  console.log(`\n👨‍⚕️  Creating ${CONFIG.NUM_PROVIDERS} providers...`);
+async function seedProviders(adminUser) {
+  console.log(`\n👨‍⚕️  Creating provider profile for admin and ${CONFIG.NUM_PROVIDERS - 1} additional providers...`);
   const providers = [];
   
-  for (let i = 0; i < CONFIG.NUM_PROVIDERS; i++) {
+  // First, create provider profile for admin user
+  let adminProvider = await Provider.findOne({ userId: adminUser._id });
+  if (!adminProvider) {
+    adminProvider = await Provider.create({
+      userId: adminUser._id,
+      specialization: 'System Administrator',
+      licenseNumber: 'ADMIN-001'
+    });
+    console.log(`  ✓ Created admin provider profile: ${adminUser.name}`);
+  } else {
+    console.log(`  ✓ Using existing admin provider profile: ${adminUser.name}`);
+  }
+  providers.push(adminProvider);
+  
+  // Create additional providers
+  for (let i = 0; i < CONFIG.NUM_PROVIDERS - 1; i++) {
     const userData = generateUser('provider', i);
     const user = await User.create(userData);
     
@@ -80,31 +104,30 @@ async function seedProviders() {
   return providers;
 }
 
-async function seedPatients(providers) {
-  console.log(`\n👤 Creating ${CONFIG.NUM_PATIENTS} patients...`);
+async function seedPatients(providers, adminProvider) {
+  console.log(`\n👤 Creating ${CONFIG.NUM_PATIENTS} patients (all assigned to admin)...`);
   const patients = [];
   
   for (let i = 0; i < CONFIG.NUM_PATIENTS; i++) {
     const userData = generateUser('patient', i);
     const user = await User.create(userData);
     
-    // Assign patient to a random provider
-    const provider = providers[Math.floor(Math.random() * providers.length)];
-    const patientData = generatePatient(user._id, provider._id);
+    // Assign ALL patients to admin provider
+    const patientData = generatePatient(user._id, adminProvider._id);
     const patient = await Patient.create(patientData);
     
-    // Update provider's patients array
-    provider.patients.push(patient._id);
-    await provider.save();
+    // Update admin provider's patients array
+    adminProvider.patients.push(patient._id);
+    await adminProvider.save();
     
     patients.push(patient);
     
     if ((i + 1) % 10 === 0) {
-      console.log(`  ✓ Created ${i + 1}/${CONFIG.NUM_PATIENTS} patients...`);
+      console.log(`  ✓ Created ${i + 1}/${CONFIG.NUM_PATIENTS} patients (assigned to admin)...`);
     }
   }
   
-  console.log(`  ✅ Created ${patients.length} patients`);
+  console.log(`  ✅ Created ${patients.length} patients (all assigned to admin)`);
   return patients;
 }
 
@@ -152,23 +175,19 @@ async function seedReminders(patients) {
   return reminders;
 }
 
-async function seedAdvisories(providers, patients) {
-  console.log(`\n📝 Creating ${CONFIG.NUM_ADVISORIES} advisories...`);
+async function seedAdvisories(adminProvider, patients) {
+  console.log(`\n📝 Creating ${CONFIG.NUM_ADVISORIES} advisories (all from admin)...`);
   const advisories = [];
   
   for (let i = 0; i < CONFIG.NUM_ADVISORIES; i++) {
-    const provider = providers[Math.floor(Math.random() * providers.length)];
-    const providerPatients = await Patient.find({ assignedProvider: provider._id });
-    
-    if (providerPatients.length > 0) {
-      const patient = providerPatients[Math.floor(Math.random() * providerPatients.length)];
-      const advisoryData = generateAdvisory(provider._id, patient._id);
-      const advisory = await Advisory.create(advisoryData);
-      advisories.push(advisory);
-    }
+    // All advisories from admin provider
+    const patient = patients[Math.floor(Math.random() * patients.length)];
+    const advisoryData = generateAdvisory(adminProvider._id, patient._id);
+    const advisory = await Advisory.create(advisoryData);
+    advisories.push(advisory);
   }
   
-  console.log(`  ✅ Created ${advisories.length} advisories`);
+  console.log(`  ✅ Created ${advisories.length} advisories (all from admin)`);
   return advisories;
 }
 
@@ -220,14 +239,34 @@ async function seed() {
     
     console.log('\n🌱 Starting data seeding process...\n');
     
-    // Clear existing data
-    await clearDatabase();
+    // Get or ensure admin user exists
+    let adminUser = await User.findOne({ email: 'admin@example.com' });
+    if (!adminUser) {
+      adminUser = await User.create({
+        email: 'admin@example.com',
+        password: 'admin123',
+        name: 'System Administrator',
+        role: 'admin',
+        consentGiven: true
+      });
+      console.log('✅ Admin user created');
+    } else {
+      console.log('✅ Admin user found:', adminUser.email);
+    }
     
-    // Seed providers
-    const providers = await seedProviders();
+    // Clear existing data (preserving admin)
+    const preservedAdmin = await clearDatabase();
+    // Use preserved admin if available, otherwise use the one we found/created
+    if (preservedAdmin) {
+      adminUser = preservedAdmin;
+    }
     
-    // Seed patients
-    const patients = await seedPatients(providers);
+    // Seed providers (admin will be the first provider)
+    const providers = await seedProviders(adminUser);
+    const adminProvider = providers[0]; // Admin is always first
+    
+    // Seed patients (all assigned to admin)
+    const patients = await seedPatients(providers, adminProvider);
     
     // Seed wellness entries
     await seedWellnessEntries(patients);
@@ -235,8 +274,8 @@ async function seed() {
     // Seed reminders
     await seedReminders(patients);
     
-    // Seed advisories
-    await seedAdvisories(providers, patients);
+    // Seed advisories (all from admin)
+    await seedAdvisories(adminProvider, patients);
     
     // Seed symptom reports
     await seedSymptomReports(patients);
@@ -248,12 +287,17 @@ async function seed() {
     console.log('\n' + '='.repeat(50));
     console.log('📊 SEEDING SUMMARY');
     console.log('='.repeat(50));
-    console.log(`👨‍⚕️  Providers: ${providers.length}`);
-    console.log(`👤 Patients: ${patients.length}`);
+    console.log(`👨‍⚕️  Providers: ${providers.length} (Admin + ${providers.length - 1} others)`);
+    console.log(`👤 Patients: ${patients.length} (ALL assigned to admin)`);
     console.log(`📊 Wellness Entries: ${CONFIG.NUM_WELLNESS_ENTRIES}`);
     console.log(`⏰ Reminders: ${CONFIG.NUM_REMINDERS}`);
-    console.log(`📝 Advisories: ${CONFIG.NUM_ADVISORIES}`);
+    console.log(`📝 Advisories: ${CONFIG.NUM_ADVISORIES} (ALL from admin)`);
     console.log(`🏥 Symptom Reports: ${CONFIG.NUM_SYMPTOM_REPORTS}`);
+    console.log(`\n🔑 Admin Credentials:`);
+    console.log(`   Email: admin@example.com`);
+    console.log(`   Password: admin123`);
+    console.log(`   Role: admin`);
+    console.log(`   Patients Assigned: ${adminProvider.patients.length}`);
     
     const totalEntries = providers.length + patients.length + CONFIG.NUM_WELLNESS_ENTRIES + 
                          CONFIG.NUM_REMINDERS + CONFIG.NUM_ADVISORIES + CONFIG.NUM_SYMPTOM_REPORTS;

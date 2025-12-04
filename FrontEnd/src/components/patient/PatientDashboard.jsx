@@ -1,46 +1,73 @@
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { patientService } from "../../services/patientService";
 import PatientSidebar from "./PatientSidebar";
 
 export default function PatientDashboard() {
+  const { user } = useAuth();
+  const { patientId } = useParams(); // Get patientId from URL if admin is viewing
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [healthTip, setHealthTip] = useState("");
 
+  // Use patientId from URL if admin is viewing, otherwise use logged-in user's ID
+  const targetUserId = patientId || user?._id;
+  const isAdminViewing = patientId && user?.role === 'admin';
+
   useEffect(() => {
-    // Mock data matching the design
-    setDashboard({
-      patientName: "David",
-      steps: {
-        current: 3620,
-        goal: 6000,
-        percentage: 60,
-      },
-      activeTime: {
-        current: 56,
-        goal: 60,
-        calories: 1712,
-        distance: 1.23,
-      },
-      sleep: {
-        hours: 6,
-        minutes: 30,
-        schedule: "11:30 pm - 06:00 am",
-      },
-      reminders: [
-        {
-          id: 1,
-          text: "Screening: Annual health check on 23rd Jan 2020",
-          type: "preventive",
+    if (targetUserId) {
+      loadDashboard();
+    }
+  }, [targetUserId]);
+
+  const loadDashboard = async () => {
+    try {
+      const response = await patientService.getDashboard(targetUserId);
+      const data = response.data.data;
+      
+      const todayEntry = data.todayEntry || {};
+      const patient = data.patient || {};
+      
+      // Calculate sleep hours and minutes
+      const sleepHours = Math.floor(todayEntry.sleepHours || 0);
+      const sleepMinutes = Math.round((todayEntry.sleepHours || 0) % 1 * 60);
+      
+      setDashboard({
+        patientName: patient.userId?.name || user?.name || "Patient",
+        steps: {
+          current: todayEntry.steps || 0,
+          goal: 6000,
+          percentage: Math.round(((todayEntry.steps || 0) / 6000) * 100),
         },
-      ],
-    });
+        activeTime: {
+          current: Math.round((todayEntry.steps || 0) / 100), // Approximate active minutes
+          goal: 60,
+          calories: Math.round((todayEntry.steps || 0) * 0.04), // Approximate calories
+          distance: ((todayEntry.steps || 0) / 1312).toFixed(2), // Approximate km
+        },
+        sleep: {
+          hours: sleepHours,
+          minutes: sleepMinutes,
+          schedule: "11:30 pm - 06:00 am", // TODO: Get from user preferences
+        },
+        reminders: data.upcomingReminders || [],
+      });
 
-    setHealthTip(
-      "Stay hydrated: aim to drink at least 8 glasses of water per day."
-    );
-
-    // TODO: Replace with actual API calls
-    // fetchPatientDashboard(patientId).then(res => setDashboard(res.data));
-  }, []);
+      setHealthTip(data.healthTip || "Stay hydrated: aim to drink at least 8 glasses of water per day.");
+    } catch (error) {
+      console.error('Failed to load dashboard:', error);
+      // Set default empty dashboard
+      setDashboard({
+        patientName: user?.name || "Patient",
+        steps: { current: 0, goal: 6000, percentage: 0 },
+        activeTime: { current: 0, goal: 60, calories: 0, distance: 0 },
+        sleep: { hours: 0, minutes: 0, schedule: "" },
+        reminders: [],
+      });
+      setHealthTip("Stay hydrated: aim to drink at least 8 glasses of water per day.");
+    }
+  };
 
   if (!dashboard) {
     return (
@@ -62,14 +89,30 @@ export default function PatientDashboard() {
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100">
-      <PatientSidebar />
+      {!isAdminViewing && <PatientSidebar />}
 
       <main className="flex-1 p-8">
+        {/* Admin Back Button */}
+        {isAdminViewing && (
+          <div className="mb-4">
+            <button
+              onClick={() => navigate('/admin/dashboard')}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-colors flex items-center gap-2 text-sm"
+            >
+              <span>←</span>
+              <span>Back to Admin Dashboard</span>
+            </button>
+          </div>
+        )}
+        
         {/* Welcome Message */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome, {dashboard.patientName}
+            {isAdminViewing ? `Patient Dashboard - ${dashboard.patientName}` : `Welcome, ${dashboard.patientName}`}
           </h1>
+          {isAdminViewing && (
+            <p className="text-slate-400 text-sm">Viewing as Administrator</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
