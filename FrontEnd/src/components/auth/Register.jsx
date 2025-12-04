@@ -40,7 +40,7 @@ export default function Register() {
 
     try {
       await register(formData);
-      navigate(formData.role === 'provider' ? '/provider/dashboard' : '/patient/dashboard');
+      navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
