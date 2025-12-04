@@ -1,9 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import PatientDashboard from "./components/patient/PatientDashboard";
-<<<<<<< HEAD
-import ProviderDashboard from "./components/provider/ProviderDashboard";
-=======
 import PatientProfile from "./components/patient/PatientProfile";
 import GoalTracker from "./components/patient/GoalTracker";
 import WellnessScore from "./components/patient/WellnessScore";
@@ -14,7 +11,6 @@ import ProviderDashboard from "./components/provider/ProviderDashboard";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import PublicHealth from "./components/PublicHealth";
->>>>>>> f33de0b7692fc751da616ea1d8bdd0355ce01395
 
 function App() {
   return (
@@ -22,33 +18,27 @@ function App() {
       <Routes>
         {/* Patient routes with sidebar */}
         <Route path="/patient/dashboard" element={<PatientDashboard />} />
-<<<<<<< HEAD
-
-        {/* All other routes with Header */}
-        <Route path="*" element={<LayoutWithHeader />} />
-=======
         <Route path="/patient/profile" element={<PatientProfile />} />
         <Route path="/patient/goals" element={<GoalTracker />} />
         <Route path="/patient/wellness" element={<WellnessScore />} />
         <Route path="/patient/symptoms" element={<SymptomChecker />} />
         <Route path="/patient/reminders" element={<Reminders />} />
         <Route path="/patient/emergency-card" element={<EmergencyCard />} />
-        
+
         {/* Provider routes */}
         <Route path="/provider/dashboard" element={<ProviderDashboard />} />
         <Route path="/provider/patients/:patientId" element={<ProviderPatientDetail />} />
-        
+
         {/* Auth routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* Public routes */}
         <Route path="/" element={<LayoutWithHeader><LandingPage /></LayoutWithHeader>} />
         <Route path="/public-health" element={<LayoutWithHeader><PublicHealth /></LayoutWithHeader>} />
-        
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
->>>>>>> f33de0b7692fc751da616ea1d8bdd0355ce01395
       </Routes>
     </Router>
   );
@@ -58,7 +48,7 @@ function App() {
 
 function LayoutWithHeader({ children }) {
   const { user, logout } = useAuth();
-  
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <Header user={user} logout={logout} />
@@ -235,174 +225,7 @@ function LandingPage() {
   );
 }
 
-<<<<<<< HEAD
-function PublicHealthPage() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">Public Health Information</h2>
-      <p className="text-slate-300">
-        General health education, preventive care guidance, and privacy policy
-        for all users.
-      </p>
-      <ul className="list-disc list-inside space-y-1 text-slate-300">
-        <li>Basic lifestyle and wellness tips</li>
-        <li>Vaccination and screening guidelines</li>
-        <li>Portal privacy & security policy</li>
-      </ul>
-    </section>
-  );
-}
-
-/* ---------- Auth Pages ---------- */
-
-function LoginPage() {
-  return (
-    <section className="max-w-md mx-auto space-y-4">
-      <h2 className="text-2xl font-semibold">Login</h2>
-      <p className="text-sm text-slate-400">
-        Secure authentication with JWT-based sessions and role-based access
-        control.
-      </p>
-      {/* TODO: Hook this to backend /api/auth/login */}
-      <form className="space-y-3">
-        <input
-          className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2"
-          placeholder="Email"
-        />
-        <input
-          type="password"
-          className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2"
-          placeholder="Password"
-        />
-        <button className="w-full rounded bg-emerald-500 py-2 font-medium hover:bg-emerald-400">
-          Login
-        </button>
-      </form>
-    </section>
-  );
-}
-
-function RegisterPage() {
-  return (
-    <section className="max-w-md mx-auto space-y-4">
-      <h2 className="text-2xl font-semibold">Register</h2>
-      <p className="text-sm text-slate-400">
-        Create an account as a Patient or Healthcare Provider. Includes consent
-        for data usage.
-      </p>
-      {/* TODO: Hook this to /api/auth/register */}
-      <form className="space-y-3">
-        <input
-          className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2"
-          placeholder="Name"
-        />
-        <input
-          className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2"
-          placeholder="Email"
-        />
-        <select className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2">
-          <option>Patient</option>
-          <option>Healthcare Provider</option>
-        </select>
-        <label className="flex items-center gap-2 text-sm text-slate-300">
-          <input type="checkbox" className="accent-emerald-500" />
-          I consent to processing of my health data for wellness & preventive
-          care.
-        </label>
-        <button className="w-full rounded bg-emerald-500 py-2 font-medium hover:bg-emerald-400">
-          Register
-        </button>
-      </form>
-    </section>
-  );
-}
-
-/* ---------- Patient Area ---------- */
-
-// PatientDashboard is now imported from components/patient/PatientDashboard.jsx
-
-function PatientProfile() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">Profile Management</h2>
-      <p className="text-slate-300">
-        Manage personal info, allergies, medications, and emergency contact.
-      </p>
-      {/* TODO: Bind to /api/patients/:id/profile */}
-    </section>
-  );
-}
-
-function GoalTracker() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">Goal Tracker</h2>
-      <p className="text-slate-300">
-        Log daily goals (steps, water intake, sleep) and visualize progress.
-      </p>
-      {/* TODO: Bind to /api/patients/:id/goals & /api/wellness */}
-    </section>
-  );
-}
-
-function WellnessScorePage() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">Wellness Score</h2>
-      <p className="text-slate-300">
-        Personalized health index combining activity, sleep, and preventive
-        compliance (0–100).
-      </p>
-      {/* TODO: Chart of score over time from /api/patients/:id/wellness */}
-    </section>
-  );
-}
-
-function SymptomChecker() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">Symptom Checker</h2>
-      <p className="text-slate-300">
-        Rule-based triage outcomes (self-care, see GP, emergency) with safety
-        disclaimers.
-      </p>
-      {/* TODO: Bind to /api/symptoms/report & /api/symptoms/history/:patientId */}
-    </section>
-  );
-}
-
-function RemindersPage() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">Reminders</h2>
-      <p className="text-slate-300">
-        Water and medication reminder schedules, adherence tracking, and
-        calendar view.
-      </p>
-      {/* TODO: Bind to /api/reminders endpoints */}
-    </section>
-  );
-}
-
-function EmergencyCardPage() {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-semibold">QR Emergency Health Card</h2>
-      <p className="text-slate-300">
-        Configure your emergency card and QR code with minimal yet critical
-        medical info.
-      </p>
-      {/* TODO: Bind to /api/patients/:id/emergency-card & /emergency/:publicToken */}
-    </section>
-  );
-}
-
-/* ---------- Provider Area ---------- */
-
-
-=======
 /* ---------- Provider Patient Detail ---------- */
->>>>>>> f33de0b7692fc751da616ea1d8bdd0355ce01395
 
 function ProviderPatientDetail() {
   return (
