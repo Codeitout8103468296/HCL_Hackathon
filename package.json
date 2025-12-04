@@ -4,18 +4,17 @@
   "description": "Healthcare Wellness & Preventive Care Portal - HCLTech Hackathon",
   "private": true,
   "scripts": {
-    "setup": "node scripts/setup.js",
-    "dev": "npm run setup && concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "init": "node scripts/init.js",
+    "dev": "npm run init && concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd FrontEnd && npm run dev",
-    "start": "npm run setup && npm run start:backend",
+    "start": "npm run init && npm run start:backend",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd FrontEnd && npm start",
     "test": "npm run test:backend",
     "test:backend": "cd backend && npm test",
     "test:frontend": "cd FrontEnd && npm test",
-    "install:all": "npm install && cd backend && npm install && cd ../FrontEnd && npm install",
-    "init": "cd backend && npm run init"
+    "install:all": "npm install && cd backend && npm install && cd ../FrontEnd && npm install"
   },
   "keywords": [
     "healthcare",
