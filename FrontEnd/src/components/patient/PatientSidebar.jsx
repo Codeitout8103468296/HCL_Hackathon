@@ -1,7 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function PatientSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const navItems = [
     { path: "/patient/dashboard", label: "Dashboard", icon: "📊" },
@@ -16,6 +24,13 @@ export default function PatientSidebar() {
   return (
     <aside className="w-64 bg-slate-900 border-r border-slate-800 min-h-screen p-6">
       <div className="space-y-2">
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-emerald-400 transition-colors mb-4 border-b border-slate-800 pb-4"
+        >
+          <span className="text-xl">🏠</span>
+          <span className="font-medium">Home</span>
+        </Link>
         {navItems.map((item) => (
           <Link
             key={item.path}
@@ -32,7 +47,10 @@ export default function PatientSidebar() {
         ))}
         
         <div className="pt-4 mt-4 border-t border-slate-800">
-          <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-red-400 w-full transition-colors">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-red-400 w-full transition-colors"
+          >
             <span className="text-xl">🚪</span>
             <span className="font-medium">Logout</span>
           </button>
