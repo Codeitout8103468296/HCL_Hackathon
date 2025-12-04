@@ -24,19 +24,19 @@ function App() {
         <Route path="/patient/symptoms" element={<SymptomChecker />} />
         <Route path="/patient/reminders" element={<Reminders />} />
         <Route path="/patient/emergency-card" element={<EmergencyCard />} />
-        
+
         {/* Provider routes */}
         <Route path="/provider/dashboard" element={<ProviderDashboard />} />
         <Route path="/provider/patients/:patientId" element={<ProviderPatientDetail />} />
-        
+
         {/* Auth routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* Public routes */}
         <Route path="/" element={<LayoutWithHeader><LandingPage /></LayoutWithHeader>} />
         <Route path="/public-health" element={<LayoutWithHeader><PublicHealth /></LayoutWithHeader>} />
-        
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -48,7 +48,7 @@ function App() {
 
 function LayoutWithHeader({ children }) {
   const { user, logout } = useAuth();
-  
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <Header user={user} logout={logout} />
