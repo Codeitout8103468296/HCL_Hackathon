@@ -57,9 +57,11 @@ const rules = [
 
 async function seedRules() {
   try {
+    // Hardcoded MongoDB URI
+    const mongoUri = 'mongodb://localhost:27017/healthcare_wellness';
     // Only connect if not already connected
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/healthcare_wellness', {
+      await mongoose.connect(mongoUri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       });
