@@ -8,6 +8,7 @@ import SymptomChecker from "./components/patient/SymptomChecker";
 import Reminders from "./components/patient/Reminders";
 import EmergencyCard from "./components/patient/EmergencyCard";
 import ProviderDashboard from "./components/provider/ProviderDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
 import ProviderPatientDetail from "./components/provider/ProviderPatientDetail";
 import ProviderAppointments from "./components/provider/ProviderAppointments";
 import Login from "./components/auth/Login";
@@ -20,6 +21,7 @@ function App() {
       <Routes>
         {/* Patient routes with sidebar */}
         <Route path="/patient/dashboard" element={<PatientDashboard />} />
+        <Route path="/patient/dashboard/:patientId" element={<PatientDashboard />} />
         <Route path="/patient/profile" element={<PatientProfile />} />
         <Route path="/patient/goals" element={<GoalTracker />} />
         <Route path="/patient/wellness" element={<WellnessScore />} />
@@ -30,6 +32,9 @@ function App() {
         {/* Provider routes */}
         <Route path="/provider/dashboard" element={<ProviderDashboard />} />
         <Route path="/provider/patients/:patientId" element={<ProviderPatientDetail />} />
+
+        {/* Admin routes */}
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/provider/appointments" element={<ProviderAppointments />} />
 
         {/* Auth routes */}
@@ -84,6 +89,11 @@ function Header({ user, logout }) {
               {user.role === 'provider' && (
                 <Link className="hover:text-emerald-300" to="/provider/dashboard">
                   Dashboard
+                </Link>
+              )}
+              {user.role === 'admin' && (
+                <Link className="hover:text-emerald-300" to="/admin/dashboard">
+                  Admin Dashboard
                 </Link>
               )}
               <span className="text-slate-400">{user.name}</span>

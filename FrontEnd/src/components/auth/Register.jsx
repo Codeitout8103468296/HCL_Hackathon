@@ -8,7 +8,11 @@ export default function Register() {
     email: '',
     password: '',
     role: 'patient',
-    consentGiven: false
+    consentGiven: false,
+    dob: '',
+    sex: '',
+    specialization: '',
+    licenseNumber: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,6 +26,14 @@ export default function Register() {
     if (!formData.consentGiven) {
       setError('You must consent to data usage to register.');
       return;
+    }
+
+    // Validate patient-specific fields
+    if (formData.role === 'patient') {
+      if (!formData.dob || !formData.sex) {
+        setError('Date of birth and sex are required for patient registration.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -99,6 +111,62 @@ export default function Register() {
               <option value="provider">Healthcare Provider</option>
             </select>
           </div>
+
+          {formData.role === 'patient' && (
+            <>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Date of Birth</label>
+                <input
+                  type="date"
+                  value={formData.dob}
+                  onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                  required={formData.role === 'patient'}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Sex</label>
+                <select
+                  value={formData.sex}
+                  onChange={(e) => setFormData({...formData, sex: e.target.value})}
+                  required={formData.role === 'patient'}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">Select...</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          {formData.role === 'provider' && (
+            <>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Specialization</label>
+                <input
+                  type="text"
+                  value={formData.specialization}
+                  onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-emerald-500"
+                  placeholder="e.g., Cardiology, Pediatrics"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">License Number</label>
+                <input
+                  type="text"
+                  value={formData.licenseNumber}
+                  onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-emerald-500"
+                  placeholder="Medical license number"
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex items-start gap-2">
             <input

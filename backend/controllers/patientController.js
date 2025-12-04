@@ -1,19 +1,33 @@
+const mongoose = require('mongoose');
 const Patient = require('../models/Patient');
 const User = require('../models/User');
 const WellnessEntry = require('../models/WellnessEntry');
 
-// @desc    Get patient dashboard
+// @desc    Get patient dashboard (admin can access any patient)
 // @route   GET /api/patients/:id/dashboard
 // @access  Private
 exports.getDashboard = async (req, res, next) => {
   try {
-    const patient = await Patient.findOne({ userId: req.params.id })
+    // Convert string ID to ObjectId
+    const userId = mongoose.Types.ObjectId.isValid(req.params.id) 
+      ? new mongoose.Types.ObjectId(req.params.id) 
+      : req.params.id;
+    
+    const patient = await Patient.findOne({ userId })
       .populate('userId', 'name email');
 
     if (!patient) {
       return res.status(404).json({
         success: false,
         message: 'Patient not found'
+      });
+    }
+
+    // Admin can access any patient, regular users can only access their own
+    if (req.user.role !== 'admin' && req.user._id.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this patient\'s dashboard'
       });
     }
 
@@ -63,7 +77,12 @@ exports.getDashboard = async (req, res, next) => {
 // @access  Private
 exports.getGoals = async (req, res, next) => {
   try {
-    const patient = await Patient.findOne({ userId: req.params.id });
+    // Convert string ID to ObjectId
+    const userId = mongoose.Types.ObjectId.isValid(req.params.id) 
+      ? new mongoose.Types.ObjectId(req.params.id) 
+      : req.params.id;
+    
+    const patient = await Patient.findOne({ userId });
 
     if (!patient) {
       return res.status(404).json({
@@ -93,7 +112,12 @@ exports.getGoals = async (req, res, next) => {
 // @access  Private
 exports.logGoal = async (req, res, next) => {
   try {
-    const patient = await Patient.findOne({ userId: req.params.id });
+    // Convert string ID to ObjectId
+    const userId = mongoose.Types.ObjectId.isValid(req.params.id) 
+      ? new mongoose.Types.ObjectId(req.params.id) 
+      : req.params.id;
+    
+    const patient = await Patient.findOne({ userId });
 
     if (!patient) {
       return res.status(404).json({
@@ -144,7 +168,12 @@ exports.logGoal = async (req, res, next) => {
 // @access  Private
 exports.getProfile = async (req, res, next) => {
   try {
-    const patient = await Patient.findOne({ userId: req.params.id })
+    // Convert string ID to ObjectId
+    const userId = mongoose.Types.ObjectId.isValid(req.params.id) 
+      ? new mongoose.Types.ObjectId(req.params.id) 
+      : req.params.id;
+    
+    const patient = await Patient.findOne({ userId })
       .populate('userId', 'name email')
       .populate('assignedProvider');
 
@@ -172,7 +201,12 @@ exports.getProfile = async (req, res, next) => {
 // @access  Private
 exports.updateProfile = async (req, res, next) => {
   try {
-    const patient = await Patient.findOne({ userId: req.params.id });
+    // Convert string ID to ObjectId
+    const userId = mongoose.Types.ObjectId.isValid(req.params.id) 
+      ? new mongoose.Types.ObjectId(req.params.id) 
+      : req.params.id;
+    
+    const patient = await Patient.findOne({ userId });
 
     if (!patient) {
       return res.status(404).json({

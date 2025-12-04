@@ -8,30 +8,73 @@ export default function EmergencyCard() {
   const [card, setCard] = useState(null);
   const [qrCode, setQrCode] = useState(null);
   const [isPublic, setIsPublic] = useState(false);
+  const [patientProfile, setPatientProfile] = useState(null);
 
   useEffect(() => {
-    // Mock data
-    setCard({
-      publicToken: 'abc123xyz789',
-      fields: {
-        name: true,
-        bloodGroup: true,
-        allergies: true,
-        emergencyContact: true
-      },
-      isPublic: false
-    });
-    setIsPublic(false);
-    // Generate mock QR code URL
-    setQrCode(`data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="white"/><text x="100" y="100" text-anchor="middle" font-size="20">QR Code</text></svg>`);
-  }, []);
+    if (user?._id) {
+      loadEmergencyCard();
+      loadPatientProfile();
+    }
+  }, [user]);
+
+  const loadPatientProfile = async () => {
+    try {
+      const response = await patientService.getProfile(user._id);
+      setPatientProfile(response.data.data);
+    } catch (error) {
+      console.error('Failed to load patient profile:', error);
+    }
+  };
+
+  const loadEmergencyCard = async () => {
+    try {
+      const response = await patientService.getEmergencyCard(user._id);
+      const cardData = response.data.data || {};
+      
+      setCard(cardData.emergencyCard);
+      setIsPublic(cardData.emergencyCard?.isPublic || false);
+      setQrCode(cardData.qrCode || null);
+    } catch (error) {
+      console.error('Failed to load emergency card:', error);
+      // If card doesn't exist, create one
+      try {
+        const createResponse = await patientService.generateEmergencyCard(user._id, {
+          fields: {
+            name: true,
+            bloodGroup: true,
+            allergies: true,
+            emergencyContact: true
+          },
+          isPublic: false
+        });
+        const cardData = createResponse.data.data || {};
+        setCard(cardData.emergencyCard);
+        setIsPublic(false);
+        setQrCode(cardData.qrCode || null);
+      } catch (createError) {
+        console.error('Failed to create emergency card:', createError);
+      }
+    }
+  };
 
   const handleTogglePublic = async () => {
     try {
-      // await patientService.generateEmergencyCard(user._id, { isPublic: !isPublic });
-      setIsPublic(!isPublic);
+      const response = await patientService.generateEmergencyCard(user._id, {
+        isPublic: !isPublic,
+        fields: card?.fields || {
+          name: true,
+          bloodGroup: true,
+          allergies: true,
+          emergencyContact: true
+        }
+      });
+      const cardData = response.data.data || {};
+      setCard(cardData.emergencyCard);
+      setIsPublic(cardData.emergencyCard?.isPublic || false);
+      setQrCode(cardData.qrCode || null);
     } catch (error) {
       console.error('Failed to update emergency card:', error);
+      alert('Failed to update emergency card. Please try again.');
     }
   };
 
@@ -145,23 +188,33 @@ export default function EmergencyCard() {
           )}
 
           {/* Preview */}
-          <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 mt-6">
-            <h2 className="text-xl font-semibold mb-4">Emergency Information Preview</h2>
-            <div className="bg-slate-800 rounded-lg p-6 space-y-3">
-              <div>
-                <span className="text-slate-400">Name:</span> <span className="font-semibold">David</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Blood Group:</span> <span className="font-semibold">O+</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Allergies:</span> <span className="font-semibold">Penicillin, Peanuts</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Emergency Contact:</span> <span className="font-semibold">Jane Doe - 555-0123</span>
+          {patientProfile && (
+            <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 mt-6">
+              <h2 className="text-xl font-semibold mb-4">Emergency Information Preview</h2>
+              <div className="bg-slate-800 rounded-lg p-6 space-y-3">
+                {card?.fields?.name && (
+                  <div>
+                    <span className="text-slate-400">Name:</span> <span className="font-semibold">{patientProfile.userId?.name || user?.name || 'N/A'}</span>
+                  </div>
+                )}
+                {card?.fields?.bloodGroup && (
+                  <div>
+                    <span className="text-slate-400">Blood Group:</span> <span className="font-semibold">{patientProfile.bloodGroup || 'N/A'}</span>
+                  </div>
+                )}
+                {card?.fields?.allergies && (
+                  <div>
+                    <span className="text-slate-400">Allergies:</span> <span className="font-semibold">{patientProfile.allergies?.join(', ') || 'None'}</span>
+                  </div>
+                )}
+                {card?.fields?.emergencyContact && patientProfile.emergencyContact && (
+                  <div>
+                    <span className="text-slate-400">Emergency Contact:</span> <span className="font-semibold">{patientProfile.emergencyContact.name} - {patientProfile.emergencyContact.phone}</span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

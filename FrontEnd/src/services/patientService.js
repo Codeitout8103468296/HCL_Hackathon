@@ -6,7 +6,7 @@ export const patientService = {
   updateProfile: (patientId, data) => api.put(`/patients/${patientId}/profile`, data),
   getGoals: (patientId) => api.get(`/patients/${patientId}/goals`),
   logGoal: (patientId, data) => api.post(`/patients/${patientId}/goals`, data),
-  getWellness: (patientId, range = '7d') => api.get(`/patients/${patientId}/wellness?range=${range}`),
+  getWellness: (patientId, range = '7d') => api.get(`/wellness/${patientId}?range=${range}`),
   submitWellness: (data) => api.post('/wellness', data),
   getReminders: (patientId) => api.get(`/reminders/${patientId}`),
   createReminder: (data) => api.post('/reminders', data),

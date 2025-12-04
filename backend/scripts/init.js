@@ -45,28 +45,60 @@ async function initialize() {
       console.log('📦 Connected to MongoDB for initialization');
     }
     
-    // Check if database already has data
-    const dataExists = await hasData();
+    // Always ensure admin user exists (create or update)
+    console.log('\n👤 Ensuring admin user exists...');
+    const adminEmail = 'admin@example.com';
+    let adminUser = await User.findOne({ email: adminEmail }).select('+password');
     
-    if (dataExists) {
-      console.log('✅ Database already initialized. Skipping seed scripts.');
-      return false; // Already initialized
+    if (!adminUser) {
+      adminUser = await User.create({
+        email: adminEmail,
+        password: 'admin123',
+        name: 'System Administrator',
+        role: 'admin',
+        consentGiven: true
+      });
+      console.log('✅ Admin user created:', adminEmail);
+    } else {
+      // Update existing admin user to ensure correct role and password
+      adminUser.role = 'admin';
+      adminUser.consentGiven = true;
+      // Force password update by marking as modified
+      adminUser.password = 'admin123';
+      adminUser.markModified('password');
+      await adminUser.save();
+      console.log('✅ Admin user verified/updated:', adminEmail);
     }
     
-    console.log('\n🌱 Database is empty. Starting initialization...\n');
+    // Only seed data if database is empty
+    const hasExistingData = await hasData();
+    if (!hasExistingData) {
+      console.log('\n🌱 Database is empty. Starting initialization...\n');
+      console.log('📌 Note: All seed data will be associated with admin user');
+      
+      // Seed preventive rules first
+      console.log('\n📋 Seeding preventive care rules...');
+      await seedRulesScript();
+      
+      // Wait a bit for rules to be saved
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Then seed synthetic data (will preserve admin user and assign all data to admin)
+      console.log('\n📊 Seeding synthetic data (all data for admin)...');
+      await seedDataScript();
+      
+      console.log('\n✨ Database initialization completed successfully!');
+      console.log('\n🔑 Admin Login Credentials:');
+      console.log(`   Email: ${adminEmail}`);
+      console.log(`   Password: admin123`);
+      console.log(`   All patients, providers, and data are accessible via admin account`);
+    } else {
+      console.log('\n✅ Database already has data. Skipping seed.');
+      console.log(`\n🔑 Admin Login Credentials:`);
+      console.log(`   Email: ${adminEmail}`);
+      console.log(`   Password: admin123`);
+    }
     
-    // Seed preventive rules first
-    console.log('📋 Seeding preventive care rules...');
-    await seedRulesScript();
-    
-    // Wait a bit for rules to be saved
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Then seed synthetic data
-    console.log('\n📊 Seeding synthetic data...');
-    await seedDataScript();
-    
-    console.log('\n✨ Database initialization completed successfully!');
     return true; // Successfully initialized
   } catch (error) {
     console.error('❌ Error during initialization:', error);

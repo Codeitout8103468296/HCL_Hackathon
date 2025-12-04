@@ -244,7 +244,7 @@ async function setup() {
   log('      cd FrontEnd && npm run dev', 'yellow');
   log('   3. Or run both together:', 'cyan');
   log('      npm run dev', 'yellow');
-  log('\n   Backend will be available at: http://localhost:5000', 'cyan');
+  log('\n   Backend will be available at: http://localhost:5001', 'cyan');
   log('   Frontend will be available at: http://localhost:5173', 'cyan');
   
   if (!mongoReady) {

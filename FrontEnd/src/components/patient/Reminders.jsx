@@ -14,57 +14,56 @@ export default function Reminders() {
   });
 
   useEffect(() => {
-    // Mock data
-    setReminders([
-      {
-        id: 1,
-        type: 'medication',
-        text: 'Take Metformin with breakfast',
-        schedule: { times: ['08:00', '20:00'] },
-        enabled: true
-      },
-      {
-        id: 2,
-        type: 'water',
-        text: 'Drink a glass of water',
-        schedule: { times: ['09:00', '12:00', '15:00', '18:00'] },
-        enabled: true
-      },
-      {
-        id: 3,
-        type: 'preventive',
-        text: 'Annual health check on 23rd Jan 2024',
-        schedule: { times: [] },
-        enabled: true
-      }
-    ]);
-  }, []);
+    if (user?._id) {
+      loadReminders();
+    }
+  }, [user]);
+
+  const loadReminders = async () => {
+    try {
+      // First get patient ID from profile
+      const profileResponse = await patientService.getProfile(user._id);
+      const patientId = profileResponse.data.data._id;
+      
+      const response = await patientService.getReminders(patientId);
+      const remindersData = response.data.data?.reminders || [];
+      setReminders(remindersData);
+    } catch (error) {
+      console.error('Failed to load reminders:', error);
+      setReminders([]);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // await patientService.createReminder({
-      //   patientId: user._id,
-      //   ...formData
-      // });
-      setReminders([...reminders, {
-        id: reminders.length + 1,
-        ...formData,
-        enabled: true
-      }]);
+      // Get patient ID from profile
+      const profileResponse = await patientService.getProfile(user._id);
+      const patientId = profileResponse.data.data._id;
+      
+      await patientService.createReminder({
+        patientId,
+        type: formData.type,
+        text: formData.text,
+        schedule: { times: formData.times }
+      });
+      
+      await loadReminders();
       setShowForm(false);
       setFormData({ type: 'water', text: '', times: ['09:00'] });
     } catch (error) {
       console.error('Failed to create reminder:', error);
+      alert('Failed to create reminder. Please try again.');
     }
   };
 
   const handleMarkTaken = async (reminderId) => {
     try {
-      // await patientService.markReminder(reminderId);
-      // Update local state
+      await patientService.markReminder(reminderId);
+      await loadReminders();
     } catch (error) {
       console.error('Failed to mark reminder:', error);
+      alert('Failed to mark reminder. Please try again.');
     }
   };
 
@@ -139,7 +138,7 @@ export default function Reminders() {
             <div className="space-y-3">
               {reminders.filter(r => r.enabled).map((reminder) => (
                 <div
-                  key={reminder.id}
+                  key={reminder._id || reminder.id}
                   className="bg-slate-800 rounded-lg p-4 flex items-center justify-between"
                 >
                   <div className="flex-1">
@@ -149,7 +148,7 @@ export default function Reminders() {
                       </span>
                       <span className="font-semibold">{reminder.text}</span>
                     </div>
-                    {reminder.schedule.times.length > 0 && (
+                    {reminder.schedule?.times?.length > 0 && (
                       <div className="text-sm text-slate-400 ml-11">
                         Times: {reminder.schedule.times.join(', ')}
                       </div>
@@ -157,7 +156,7 @@ export default function Reminders() {
                   </div>
                   {reminder.type !== 'preventive' && (
                     <button
-                      onClick={() => handleMarkTaken(reminder.id)}
+                      onClick={() => handleMarkTaken(reminder._id || reminder.id)}
                       className="px-4 py-2 bg-emerald-500 rounded-lg hover:bg-emerald-400 text-sm"
                     >
                       Mark as Taken

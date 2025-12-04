@@ -149,7 +149,7 @@ npm install
 Create a `.env` file:
 
 ```
-PORT=5000
+PORT=5001
 MONGODB_URI=<your_mongodb_connection_string>
 JWT_SECRET=<your_jwt_secret_key>
 ```
@@ -160,7 +160,7 @@ Start backend:
 npm start
 ```
 
-Backend: [http://localhost:5000](http://localhost:5000)
+Backend: [http://localhost:5001](http://localhost:5001)
 
 ---
 

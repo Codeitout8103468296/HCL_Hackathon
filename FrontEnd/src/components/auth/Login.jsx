@@ -16,10 +16,30 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/patient/dashboard');
+      const user = await login(email, password);
+      // Navigate based on user role
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (user.role === 'provider') {
+        navigate('/provider/dashboard');
+      } else {
+        navigate('/patient/dashboard');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.message 
+        || err.message 
+        || (err.response?.status === 401 ? 'Invalid email or password' : 'Login failed. Please check your credentials.');
+      setError(errorMessage);
+      
+      // Show more details in console for debugging
+      if (err.response) {
+        console.error('Response status:', err.response.status);
+        console.error('Response data:', err.response.data);
+      } else if (err.request) {
+        console.error('No response received. Is the backend server running?');
+        setError('Cannot connect to server. Please ensure the backend is running on http://localhost:5001');
+      }
     } finally {
       setLoading(false);
     }
