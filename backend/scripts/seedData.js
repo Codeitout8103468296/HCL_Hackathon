@@ -8,15 +8,10 @@
 
 require('dotenv').config();
 
-// Ensure MONGODB_URI is set
-if (!process.env.MONGODB_URI) {
-  console.error('❌ Error: MONGODB_URI environment variable is not set');
-  console.log('Please create a .env file with MONGODB_URI=your_mongodb_connection_string');
-  process.exit(1);
-}
+// Hardcoded MongoDB URI
+const MONGODB_URI = 'mongodb://localhost:27017/healthcare_wellness';
 
 const mongoose = require('mongoose');
-const connectDB = require('../config/db');
 
 const User = require('../models/User');
 const Patient = require('../models/Patient');
@@ -215,7 +210,12 @@ async function seed() {
   try {
     // Connect to database only if not already connected
     if (mongoose.connection.readyState === 0) {
-      await connectDB();
+      // Use hardcoded URI directly
+      await mongoose.connect(MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log('Connected to MongoDB');
     }
     
     console.log('\n🌱 Starting data seeding process...\n');

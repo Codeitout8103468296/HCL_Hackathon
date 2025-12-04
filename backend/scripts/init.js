@@ -34,8 +34,8 @@ async function hasData() {
  */
 async function initialize() {
   try {
-    // Connect to database
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/healthcare_wellness';
+    // Hardcoded MongoDB URI
+    const mongoUri = 'mongodb://localhost:27017/healthcare_wellness';
     
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(mongoUri, {

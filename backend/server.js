@@ -53,7 +53,9 @@ app.use((req, res) => {
 
 // Connect to MongoDB (only if not in test environment)
 if (process.env.NODE_ENV !== 'test') {
-  mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/healthcare_wellness', {
+  // Hardcoded MongoDB URI
+  const mongoUri = 'mongodb://localhost:27017/healthcare_wellness';
+  mongoose.connect(mongoUri, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
